@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Epizeuxis</title>
+  <script src="Epizeuxis.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cousine&display=swap" rel="stylesheet"> 
+  <script>
+    const e = el => document.querySelector(el);
+    const es = txt => txt.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    function DOM_term_type ({target, keyCode, shiftKey}) {
+      if (keyCode != 13 || shiftKey) return true;
+
+      target.value = target.value.trim();
+      let out = "";
+      let last = vm(target.value, str => out += str);
+      e("pre").innerHTML += '<history>'+ es(target.value) +'</history>'+ out + last;
+
+      target.value = "";
+      window.scrollTo(0, document.body.scrollHeight);
+      DOM_input_resize(target);
+      return false;
+    }
+
+    function DOM_input_resize (that) {
+      that.style.height = 0;
+      that.style.height = that.scrollHeight +'px'
+    }
+  </script>
+  <style>
+    html, body, div, span, textarea, term, pre {
+      padding: 0;
+      margin: 0;
+      font-family: 'Cousine', monospace;
+    }
+
+    body {
+      padding: 1rem;
+    }
+
+    term, pre, textarea {
+      width: 100%;
+      border: none;
+      resize: none;
+      outline: none;
+    }
+    
+    pre {
+      white-space: pre-wrap;
+    }
+
+    term pre history, term textarea {
+      background-color: #eee;
+      display: block;
+    }
+  </style>
+</head>
+
+<body onload="DOM_input_resize(e('textarea'))">
+  <term>
+    <pre><span title="/ɛpizuksɪs/">Epizeuxis</span> REPL. Use Enter to submit code. Use Shift+Enter to create a newline.
+</pre>
+    <textarea onkeypress="return DOM_term_type(event);" oninput="DOM_input_resize(this)" autofocus>
+(def pi (eval Math.PI))
+(fn double n (* n 2))
+(fn pos?   n (< 0 n))
+(fn neg?   n (< n 0))
+(fn odd?   n (= (mod n 2) 1))
+(fn even?  n (! (odd? n)))
+(fn zero?  n (= n 0))
+(fn inc    n (+ n 1))
+(fn dec    n (- n 1))
+(fn first  v (nth v 0))
+(fn second v (nth v 1))
+(fn avg list
+  (/ (+ (.. list))
+     (len list)))
+(fn range n
+  (eval "[...Array(" n ").keys()]"))
+
+(fn fib n
+  (if (< n 2) n
+    (+ (fib (dec n))
+       (fib (- n 2)))))
+(fn countdown-from n
+  (when (pos? n)
+    (println n)
+    (recur (dec n))))
+(fn vec->xml v
+  (if (vec? v)
+    (do
+      (let tag (first v))
+      (str
+        "<" $tag ">"
+        (.. (map vec->xml (sect v)))
+        "</" $tag ">"))
+    v))
+(vec->xml
+  [div
+    [h1 "Hello"]
+    [p "JavaScript's Math.PI is " [b $pi] "."]])</textarea>
+  </term>
+</body>
+
+</html>
