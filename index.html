@@ -61,7 +61,7 @@
 
 <body onload="DOM_input_resize(e('textarea'))">
   <term>
-    <pre><span title="/ɛpizuksɪs/">Epizeuxis</span> REPL. Use Enter to submit code. Use Shift+Enter to create a newline.
+    <pre>Epizeuxis REPL. Use Enter to submit code. Use Shift+Enter to create a newline.
 </pre>
     <textarea onkeypress="return DOM_term_type(event);" oninput="DOM_input_resize(this)" autofocus>
 (def pi (eval Math.PI))
@@ -75,11 +75,15 @@
 (fn dec    n (- n 1))
 (fn first  v (nth v 0))
 (fn second v (nth v 1))
+(fn int x radix
+  (eval "parseInt(" (x->js x) ", " (or radix 10)\)))
 (fn avg list
   (/ (+ (.. list))
      (len list)))
 (fn range n
   (eval "[...Array(" n ").keys()]"))
+(fn split s d
+  (eval (x->js s) ".split(" (x->js d) ")"))
 
 (fn fib n
   (if (< n 2) n
@@ -94,14 +98,14 @@
     (do
       (let tag (first v))
       (str
-        "<" $tag ">"
+        \< $tag \>
         (.. (map vec->xml (sect v)))
-        "</" $tag ">"))
+        "</" $tag \>))
     v))
 (vec->xml
   [div
     [h1 "Hello"]
-    [p "JavaScript's Math.PI is " [b $pi] "."]])</textarea>
+    [p "JavaScript's Math.PI is " \nl [b $pi] "."]])</textarea>
   </term>
 </body>
 

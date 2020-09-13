@@ -39,6 +39,12 @@ function tokenise (source) {
         tokens.push({type: Tkn.Str, str: str.replace(/\\"/g, '"')});
         i += str.length+1;
         break;
+      case '\\':
+        let sample = source.substr(i+1, 2);
+        let longCh = {'nl': '\n', 'sp': ' '}[sample];
+        tokens.push({type: Tkn.Str, str: longCh || sample[0]});
+        i += longCh ? 2 : 1;
+        break;
       case '%':
         let [pstr] = source.slice(i+1).match(/^[\d]+/) || [];
         tokens.push({type: Tkn.Param, num: parseInt(pstr || 0)});
@@ -135,7 +141,8 @@ let funcs = {
                             .map(i => exeOp(f, vs.map(v => v[i]))),
   "reduce":  (f, v, s)  => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b])),
   "when":    (...all)   => all.pop(),
-  "eval":    (...all)   => eval(funcs["str"](...all))
+  "eval":    (...all)   => eval(funcs["str"](...all)),
+  "x->js":   x          => JSON.stringify(x)
 };
 
 const isTrue = v => v && v.type != Tkn.N && v.type != Tkn.F;
