@@ -117,8 +117,9 @@ let funcs = {
   "val":     v          => v,
   "do":      (...all)   => all.pop(),
   "!":       v          => !v,
-  "def":     (n, val)   => nu(variables[n] = val),
-  "println": (...all)   => nu(printer(all.join("") +'\n')), 
+  "def":     (k, val)   => nu(variables[`$${k}`] = val),
+  "print":   (...all)   => nu(printer(all.join(""))),
+  "println": (...all)   => funcs.print(...all, "\n"),
   "+":       (...all)   => all.reduce((a, b) => a + b),
   "-":       (...all)   => all.reduce((a, b) => a - b),
   "*":       (...all)   => all.reduce((a, b) => a * b),
@@ -152,9 +153,9 @@ let funcs = {
     }
     return null;
   },
-  "map":     (f, ...vs) =>  [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
-                            .map(i => exeOp(f, vs.map(v => v.nth(i)))),
-  "reduce":  (f, v, s)  => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b])),
+  "map":     (ctx, f, ...vs) =>  [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
+                            .map(i => exeOp(f, vs.map(v => v.nth(i)), ctx)),
+  "reduce":  (ctx, f, v, s)  => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b], ctx)),
   "when":    (...all)   => all.pop(),
   "eval":    (...all)   => eval(funcs["str"](...all)),
   "x->js":   x          => JSON.stringify(x)
@@ -169,33 +170,37 @@ function vm (source, newPrinter) {
 }
 
 let doRecur;
-function exeFunc (fName, params = []) {
+function exeFunc (fName, params = [], ctx = new Map()) {
   let ret;
-  let lets = {};
   do {
     doRecur = doBurst = false;
     let f = funcs[fName].slice();
     if (!f.length) return Tkn.N;
     if (f.length == 1)
-      return exeArg(f, params, []);
+      return exeArg(f, ctx);
     const paramSyms = f.slice(0, f.findIndex(t => t.type == Tkn.LParen)).map(p => p.str);
     f = f.slice(paramSyms.length);
+    ctx = new Map([...ctx,                                     //Combine old context...
+                   ...paramSyms.map((p, i) => [p, params[i]]), //with named parameters
+                   ...params.map((p, i) => [i, p])]);          //and numbered parameters
     while (f.length && !doRecur)
-      ret = exeForm(f, lets, params, paramSyms);
+      ret = exeForm(f, ctx);
     if (doRecur) params = ret;
   } while (doRecur);
   return ret;
 }
 
-function exeOp (op, args) {
+function exeOp (op, args, ctx) {
   if (Number.isInteger(op))
     return args[0].nth(op);
   if (op.startsWith(':'))
     return args[0].get(op);
   if (typeof(funcs[op]) == 'function')
-    return funcs[op](...args);
+    return ["map", "reduce"].includes(op)
+      ? funcs[op](ctx, ...args)
+      : funcs[op](...args);
   if (Array.isArray(funcs[op]))
-    return exeFunc(op, args);
+    return exeFunc(op, args, ctx);
   console.log(`Operation \`${op}\` not found.`);
   return null;
 }
@@ -215,11 +220,11 @@ function skipForm (f) {
 }
 
 let doBurst = false;
-function exeForm (f, lets, params, paramSyms) {
+function exeForm (f, ctx) {
   if (f.length == 1)
-    return exeArg(f, lets);
+    return exeArg(f, ctx);
   if (f[0].type == Tkn.LParen) f.shift();
-  const op = exeArg(f, lets, params, paramSyms);
+  const op = exeArg(f, ctx);
   const args = [];
   while (f.length) {
     //Break on )
@@ -229,16 +234,16 @@ function exeForm (f, lets, params, paramSyms) {
     }
     //Emit an indexed parameter
     if (f[0].type == Tkn.Param) {
-      args.push(params[f[0].num]);
+      args.push(ctx.get(f[0].num));
       f.shift();
     } else
     //Emit a named parameter
-    if ((pIdx = paramSyms.indexOf(f[0].str)) != -1) {
-      args.push(params[pIdx]);
+    if (ctx.has(f[0].str)) {
+      args.push(ctx.get(f[0].str));
       f.shift();
     } else
     //Evaluate the argument
-      args.push(exeArg(f, lets, params, paramSyms));
+      args.push(exeArg(f, ctx));
     if (doRecur) return args.pop();
     if (doBurst) {
       doBurst = false;
@@ -289,19 +294,19 @@ function exeForm (f, lets, params, paramSyms) {
   if (op == "..")
     return (doBurst = (args[0] ? args[0] : null));
   if (op == "let") {
-    lets[args[0]] = args[1];
+    ctx.set(`$${args[0]}`, args[1]);
     return null;
   }
-  return exeOp(op, args);
+  return exeOp(op, args, ctx);
 }
 
-function exeArg (f, lets, params, paramSyms) {
+function exeArg (f, ctx) {
   const t = f.shift();
   switch (t.type) {
-    case Tkn.LParen: return exeForm(f, lets, params, paramSyms);
+    case Tkn.LParen: return exeForm(f, ctx);
     case Tkn.Sym: case Tkn.Str:
       return t.str.startsWith("$")
-        ? (lets[t.str.slice(1)] || variables[t.str.slice(1)])
+        ? (ctx.get(t.str) || variables[t.str])
         : t.str;
     case Tkn.Num: return t.num;
     case Tkn.T: return true;

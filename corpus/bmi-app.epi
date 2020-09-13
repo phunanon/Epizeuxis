@@ -1,0 +1,26 @@
+
+
+(fn BMI kg m
+  (/ kg (* m m)))
+
+(def bmi-txts
+  [[30   obese]
+   [25   overweight]
+   [18.5 normal]
+   [0    underweight]])
+
+(fn bmi-str bmi
+  (or (..
+    (map #(if (< (0 %) bmi) (1 %))
+         $bmi-txts))))
+
+(fn bmi-app
+  (let kg  (prompt-int "What is your mass in kilograms?"))
+  (let cm  (prompt-int "What is your height in centimetres?"))
+  (let bmi (BMI $kg (/ $cm 100)))
+  (str "Your BMI is <b>" $bmi "</b>" \nl
+       "Therefore you are classed as <b>"
+       (bmi-str $bmi)
+       "</b>"))
+
+(bmi-app)
