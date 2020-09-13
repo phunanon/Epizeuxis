@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base target="_blank">
   <title>Epizeuxis</title>
   <script src="Epizeuxis.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cousine&display=swap" rel="stylesheet"> 
@@ -54,6 +55,7 @@
 
     term pre history, term textarea {
       background-color: #eee;
+      border-bottom: .1rem solid #ddd;
       display: block;
     }
   </style>
@@ -73,8 +75,10 @@
 (fn zero?  n (= n 0))
 (fn inc    n (+ n 1))
 (fn dec    n (- n 1))
-(fn first  v (nth v 0))
-(fn second v (nth v 1))
+(fn first  v (0 v))
+(fn second v (1 v))
+(fn third  v (2 v))
+(fn last   v ((dec (len v)) v))
 (fn int x radix
   (eval "parseInt(" (x->js x) ", " (or radix 10)\)))
 (fn avg list
@@ -84,6 +88,10 @@
   (eval "[...Array(" n ").keys()]"))
 (fn split s d
   (eval (x->js s) ".split(" (x->js d) ")"))
+(fn prompt txt
+  (eval "prompt(" (x->js txt) ")"))
+(fn prompt-int txt
+  (int (prompt txt)))
 
 (fn fib n
   (if (< n 2) n
@@ -96,16 +104,23 @@
 (fn vec->xml v
   (if (vec? v)
     (do
-      (let tag (first v))
+      (let tag (0 v))
+      (let attr
+        (if (dict? (1 v))
+          (map #(str \sp (0 %) \= \" (1 %) \") (1 v))))
       (str
-        \< $tag \>
-        (.. (map vec->xml (sect v)))
+        \< $tag (.. $attr) \>
+        (.. (map vec->xml (sect (if $attr 2 1) v)))
         "</" $tag \>))
     v))
+
 (vec->xml
   [div
     [h1 "Hello"]
-    [p "JavaScript's Math.PI is " \nl [b $pi] "."]])</textarea>
+    [p "JavaScript's Math.PI is " \nl [b $pi] "."]
+    [p "Find more info about Epizeuxis on "
+       [a {href "https://github.com/phunanon/Epizeuxis"}
+          "Github"]]])</textarea>
   </term>
 </body>
 

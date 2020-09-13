@@ -1,5 +1,8 @@
-
-Array.prototype.toString = function () { return `[${this.join(" ")}]`; };
+Array.prototype.toString = function () { return `[${this.join(' ')}]`; };
+Map.prototype.toString = function () { return `{${[...this.entries()].map(e => e.join(' ')).join(', ')}}`; };
+Object.defineProperty(Map.prototype, "length", {get: function () { return this.size; }});
+String.prototype.nth = Array.prototype.nth = function (n) { return this[n]; };
+Map.prototype.nth = function (n) { return (key = [...this.keys()][n], [key, this.get(key)]); };
 const hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
 
 const Tkn = {
@@ -14,9 +17,9 @@ function tokenise (source) {
   for (let i = 0; i < source.length; ++i) {
     const c = source[i];
     if (/\s/.test(c)) continue;
-    if (/\d/.test(c)) {
-      const [num] = source.slice(i).match(/\d+/);
-      tokens.push({type: Tkn.Num, num: parseInt(num)});
+    if (/\d+(\.\d+)?/.test(c)) {
+      const [num] = source.slice(i).match(/[\d.]+/);
+      tokens.push({type: Tkn.Num, num: (num.includes('.') ? parseFloat : parseInt)(num)});
       i += num.length - 1;
       continue;
     }
@@ -28,10 +31,11 @@ function tokenise (source) {
     switch (c) {
       case '(': tokens.push({type: Tkn.LParen}); break;
       case '[':
+      case '{':
         tokens.push({type: Tkn.LParen});
-        tokens.push({type: Tkn.Sym, str: "vec"});
+        tokens.push({type: Tkn.Sym, str: {'[': "vec", '{': "dict"}[c]});
         break;
-      case ')': case ']':
+      case ')': case ']': case '}':
         tokens.push({type: Tkn.RParen});
         break;
       case '"':
@@ -52,7 +56,7 @@ function tokenise (source) {
         break;
       case '#': tokens.push({type: Tkn.Hash}); break;
       default:
-        let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.]+/);
+        let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.:]+/);
         tokens.push({type: Tkn.Sym, str: sym});
         i += sym.length - 1;
     }
@@ -108,11 +112,12 @@ const nu = () => Tkn.N;
 let printer;
 let variables = {};
 let funcs = {
+  "or":      (...all)   => all.find(x => x) || null,
+  "and":     (...all)   => all.every(x => x) || null,
   "val":     v          => v,
   "do":      (...all)   => all.pop(),
   "!":       v          => !v,
   "def":     (n, val)   => nu(variables[n] = val),
-  "str":     (...all)   => all.join(""),
   "println": (...all)   => nu(printer(all.join("") +'\n')), 
   "+":       (...all)   => all.reduce((a, b) => a + b),
   "-":       (...all)   => all.reduce((a, b) => a - b),
@@ -126,9 +131,19 @@ let funcs = {
   ">=":      (...all)   => !isNaN(all.reduce((a, b) => a >= b ? b : NaN)),
   "<=":      (...all)   => !isNaN(all.reduce((a, b) => a <= b ? b : NaN)),
   "vec?":    v          => Array.isArray(v),
+  "str?":    s          => typeof(s) == 'string',
+  "dict?":   d          => d instanceof Map,
   "vec":     (...all)   => all,
+  "str":     (...all)   => all.join(""),
+  "dict":    (...all)   => {
+    let dict = new Map();
+    for (let i = 0; i < all.length; i += 2)
+      dict.set(all[i], i+1 < all.length ? all[i+1] : null);
+    return dict;
+  },
   "len":     arr        => arr.length,
-  "nth":     (arr, n)   => arr[n],
+  "nth":     (arr, n)   => arr.nth(n),
+  "into":    (src, des) => new Map([...des, ...src]),
   "sect":    (...all) => {
     switch (all.length) {
       case 1: return all[0].slice(1);
@@ -137,8 +152,8 @@ let funcs = {
     }
     return null;
   },
-  "map":     (f, ...vs) =>  [...Array(Math.min(...vs.map(v => v.length))).keys()]
-                            .map(i => exeOp(f, vs.map(v => v[i]))),
+  "map":     (f, ...vs) =>  [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
+                            .map(i => exeOp(f, vs.map(v => v.nth(i)))),
   "reduce":  (f, v, s)  => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b])),
   "when":    (...all)   => all.pop(),
   "eval":    (...all)   => eval(funcs["str"](...all)),
@@ -158,7 +173,7 @@ function exeFunc (fName, params = []) {
   let ret;
   let lets = {};
   do {
-    doRecur = false;
+    doRecur = doBurst = false;
     let f = funcs[fName].slice();
     if (!f.length) return Tkn.N;
     if (f.length == 1)
@@ -173,10 +188,15 @@ function exeFunc (fName, params = []) {
 }
 
 function exeOp (op, args) {
+  if (Number.isInteger(op))
+    return args[0].nth(op);
+  if (op.startsWith(':'))
+    return args[0].get(op);
   if (typeof(funcs[op]) == 'function')
     return funcs[op](...args);
   if (Array.isArray(funcs[op]))
     return exeFunc(op, args);
+  console.log(`Operation \`${op}\` not found.`);
   return null;
 }
 
@@ -196,28 +216,35 @@ function skipForm (f) {
 
 let doBurst = false;
 function exeForm (f, lets, params, paramSyms) {
+  if (f.length == 1)
+    return exeArg(f, lets);
   if (f[0].type == Tkn.LParen) f.shift();
-  const op = exeArg(f, lets);
+  const op = exeArg(f, lets, params, paramSyms);
   const args = [];
   while (f.length) {
+    //Break on )
     if (f[0].type == Tkn.RParen) {
       f.shift();
       break;
     }
+    //Emit an indexed parameter
     if (f[0].type == Tkn.Param) {
       args.push(params[f[0].num]);
       f.shift();
     } else
+    //Emit a named parameter
     if ((pIdx = paramSyms.indexOf(f[0].str)) != -1) {
       args.push(params[pIdx]);
       f.shift();
     } else
+    //Evaluate the argument
       args.push(exeArg(f, lets, params, paramSyms));
     if (doRecur) return args.pop();
     if (doBurst) {
       doBurst = false;
       args.push(...args.pop());
     }
+
     if (op == "when" && args.length == 1 && !isTrue(args[0])) {
       skipForm(f);
       if (f.length && f[0].type == Tkn.RParen) f.shift();
@@ -231,34 +258,36 @@ function exeForm (f, lets, params, paramSyms) {
         return args.length == 2 ? args[1] : null;
       }
     } else
-    if (op == "and") {
-      if (!isTrue(args[0]))
-        skipForm(f);
-      if (f[0].type == Tkn.RParen) {
-        f.shift();
-        return isTrue(args[0]);
+    //Short-circuited `and` and `or`
+    //  should only be used if there is one arg at a time;
+    //  won't happen during a burst or mapping
+    //  which will instead use native operations
+    if (args.length == 1) {
+      if (op == "and") {
+        if (!isTrue(args[0]))
+          skipForm(f);
+        if (f[0].type == Tkn.RParen) {
+          f.shift();
+          return isTrue(args[0]);
+        }
+        args.pop();
+      } else
+      if (op == "or") {
+        if (isTrue(args[0]))
+          skipForm(f);
+        if (f[0].type == Tkn.RParen) {
+          f.shift();
+          return isTrue(args[0]) ? args[0] : false;
+        }
+        args.pop();
       }
-      args.pop();
-    } else
-    if (op == "or") {
-      if (isTrue(args[0]))
-        skipForm(f);
-      if (f[0].type == Tkn.RParen) {
-        f.shift();
-        return isTrue(args[0]) ? args[0] : false;
-      }
-      args.pop();
     }
   }
   
-  if (op == "recur") {
-    doRecur = true;
-    return args;
-  }
-  if (op == "..") {
-    doBurst = true;
-    return args[0];
-  }
+  if (op == "recur")
+    return (doRecur = args);
+  if (op == "..")
+    return (doBurst = (args[0] ? args[0] : null));
   if (op == "let") {
     lets[args[0]] = args[1];
     return null;
