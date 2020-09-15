@@ -64,7 +64,7 @@ function tokenise (source) {
         } else tokens.push({type: Tkn.Hash});
         break;
       default:
-        let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.:]+/);
+        let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.:&|^~]+/);
         tokens.push({type: Tkn.Sym, str: sym});
         i += sym.length - 1;
     }
@@ -132,6 +132,12 @@ let funcs = {
   "-":       (...all)   => all.reduce((a, b) => a - b),
   "*":       (...all)   => all.reduce((a, b) => a * b),
   "/":       (...all)   => all.reduce((a, b) => a / b),
+  "quo":     (...all)   => all.reduce((a, b) => Math.floor(a / b)),
+  "&":       (...all)   => all.reduce((a, b) => a & b),
+  "|":       (...all)   => all.reduce((a, b) => a | b),
+  "^":       (...all)   => all.reduce((a, b) => a ^ b),
+  "~":       n          => ~n,
+  "**":      (a, b)     => a ** b,
   "mod":     (a, b)     => a % b,
   "=":       (...all)   => all.every(v => v == all[0]),
   "!=":      (...all)   => !funcs["="](...all),
@@ -195,8 +201,10 @@ function exeFunc (fName, params = [], ctx = new Map()) {
     ctx = new Map([...ctx,                                     //Combine old context...
                    ...paramSyms.map((p, i) => [p, params[i]]), //with named parameters
                    ...params.map((p, i) => [i, p])]);          //and numbered parameters
-    while (f.length && !doRecur)
+    while (f.length && !doRecur) {
+      if (f[0].type == Tkn.LParen) f.shift();
       ret = exeForm(f, ctx);
+    }
     if (doRecur) params = ret;
   } while (doRecur);
   return ret;
@@ -241,7 +249,6 @@ let doBurst = false;
 function exeForm (f, ctx) {
   if (f.length == 1)
     return exeArg(f, ctx);
-  if (f[0].type == Tkn.LParen) f.shift();
   const op = exeArg(f, ctx);
   const args = [];
   while (f.length) {

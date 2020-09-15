@@ -46,6 +46,20 @@ E.g. `(#{a 1 :c} d) => null`
 A keyword such as `:keyword` can be used to get the `:keyword` key from a dictionary.  
 E.g. `(:name {:age 23 :name "Patrick" :gender "Male"}) => "Patrick"`
 
+There are many arthimetic and comparison operations, demonstrated:  
+`(+ 1 2 3) => 3`, addition, varadic;  
+`(- 1 2 3) => -4`, subtraction, varadic;  
+`(* 60 60 24) => 86400`, multiplication, varadic;  
+`(/ 10 2 2) => 2.5`, division, varadic;  
+`(quo 19 2 2) => 4`, quotient, varadic;  
+`(& 123 12 9) => 8`, bitwise AND, varadic;  
+`(| 128 64 1) => 193`, bitwise OR, varadic;  
+`(^ 55 170 55) => 170`, bitwise XOR, varadic;  
+`(~ 170) => -171`, bitwise NOT, arity 1;  
+`(** 2 8) => 256`, expotent, arity 2;  
+`(mod 1234 10) => 4`, modulus, arity 2;  
+Undocumented: `<< >> = != > < >= <=`
+
 `sect` returns vector or string `v` with…  
 `(sect v)` … the first element dropped;  
 `(sect d v)` … `d` number of elements dropped;  
@@ -90,4 +104,4 @@ The following operations evaluate all their arguments but…
 `do` returns its last argument.
 
 **Other currently undocumented functions:**  
-`if and or let recur ! def str println print + - * / mod = != > < >= <= map reduce when`  
+`if and or let recur ! def str println print map reduce when`  
