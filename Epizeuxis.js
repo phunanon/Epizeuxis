@@ -1,7 +1,11 @@
-Array.prototype.toString = function () { return `[${this.join(' ')}]`; };
-Map.prototype.toString = function () { return `{${[...this.entries()].map(e => e.join(' ')).join(', ')}}`; };
+const mapnstr = v => [...v].map(x => x == null ? "null" : x);
+Array.prototype.toString = function () { return `[${mapnstr(this).join(' ')}]`; };
+Set.prototype.toString = function () { return `#{${mapnstr(this).join(' ')}}`; };
+Map.prototype.toString = function () { return `{${[...this.entries()].map(e => mapnstr(e).join(' ')).join(', ')}}`; };
+Object.defineProperty(Set.prototype, "length", {get: function () { return this.size; }});
 Object.defineProperty(Map.prototype, "length", {get: function () { return this.size; }});
 String.prototype.nth = Array.prototype.nth = function (n) { return this[n]; };
+Set.prototype.nth = function (n) { return [...this][n]; };
 Map.prototype.nth = function (n) { return (key = [...this.keys()][n], [key, this.get(key)]); };
 const hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
 
@@ -32,8 +36,7 @@ function tokenise (source) {
       case '(': tokens.push({type: Tkn.LParen}); break;
       case '[':
       case '{':
-        tokens.push({type: Tkn.LParen});
-        tokens.push({type: Tkn.Sym, str: {'[': "vec", '{': "dict"}[c]});
+        tokens.push({type: Tkn.LParen}, {type: Tkn.Sym, str: {'[': "vec", '{': "dict"}[c]});
         break;
       case ')': case ']': case '}':
         tokens.push({type: Tkn.RParen});
@@ -54,7 +57,12 @@ function tokenise (source) {
         tokens.push({type: Tkn.Param, num: parseInt(pstr || 0)});
         i += (pstr || []).length;
         break;
-      case '#': tokens.push({type: Tkn.Hash}); break;
+      case '#':
+        if (source[i+1] == "{") {
+          ++i;
+          tokens.push({type: Tkn.LParen}, {type: Tkn.Sym, str: "set"});
+        } else tokens.push({type: Tkn.Hash});
+        break;
       default:
         let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.:]+/);
         tokens.push({type: Tkn.Sym, str: sym});
@@ -131,11 +139,13 @@ let funcs = {
   "<":       (...all)   => !isNaN(all.reduce((a, b) => a <  b ? b : NaN)),
   ">=":      (...all)   => !isNaN(all.reduce((a, b) => a >= b ? b : NaN)),
   "<=":      (...all)   => !isNaN(all.reduce((a, b) => a <= b ? b : NaN)),
-  "vec?":    v          => Array.isArray(v),
   "str?":    s          => typeof(s) == 'string',
+  "vec?":    v          => Array.isArray(v),
+  "set?":    s          => s instanceof Set,
   "dict?":   d          => d instanceof Map,
-  "vec":     (...all)   => all,
   "str":     (...all)   => all.join(""),
+  "vec":     (...all)   => all,
+  "set":     (...all)   => new Set(all),
   "dict":    (...all)   => {
     let dict = new Map();
     for (let i = 0; i < all.length; i += 2)
@@ -144,7 +154,9 @@ let funcs = {
   },
   "len":     arr        => arr.length,
   "nth":     (arr, n)   => arr.nth(n),
-  "into":    (src, des) => new Map([...des, ...src]),
+  "into":    (src, des) => src instanceof Map ? new Map([...src, ...des])
+                            : src instanceof Set ? new Set([...src, ...des]) :
+                            [...src, ...des],
   "sect":    (...all) => {
     switch (all.length) {
       case 1: return all[0].slice(1);
@@ -193,6 +205,12 @@ function exeFunc (fName, params = [], ctx = new Map()) {
 function exeOp (op, args, ctx) {
   if (Number.isInteger(op))
     return args[0].nth(op);
+  if (Array.isArray(op))
+    return op.includes(args[0]);
+  if (op instanceof Map)
+    return op.get(args[0]);
+  if (op instanceof Set)
+    return op.has(args[0]) ? args[0] : null;
   if (op.startsWith(':'))
     return args[0].get(op);
   if (typeof(funcs[op]) == 'function')

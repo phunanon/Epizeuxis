@@ -1,9 +1,9 @@
 # Epizeuxis
 
-A toy browser-based programming language for teaching/learning. Pronounced /ɛpɪzuksɪs/ (ep-i-ZOOK-sis).  
-Acts as a 'hosted' language, similar to [Clojure](https://en.wikipedia.org/wiki/Clojure), in that interfacing with JavaScript is permitted and encouraged. 
+## Try it [here](https://phunanon.github.io/Epizeuxis).
 
-Try it [here](https://phunanon.github.io/Epizeuxis).  
+A toy browser-based programming language for teaching/learning. Pronounced /ɛpɪzuksɪs/ (ep-i-ZOOK-sis).  
+Acts as a 'hosted' language, similar to [Clojure](https://en.wikipedia.org/wiki/Clojure), in that interfacing with JavaScript is permitted and encouraged.  
 Core functions are provided as example on how the native operations work, syntax, and to make the language more usable.
 
 ### Syntax
@@ -18,13 +18,30 @@ Core functions are provided as example on how the native operations work, syntax
 - `%` is the first function parameter
 - `%N` is the `N`th parameter
 
+**Collections**  
+- `[a 1 :c]` is a vector of elements of any type, equivalent to `(vec a 1 :c)`
+- `{a 0 b :c}` is a dictionary of key-value pairs of any type, equivalent to `(dict a 0 b :c)`
+- `#{a 1 :c}` is a set of unique values, equivalent to `(set a 1 :c)`
+
+Note: dictionaries are stringified such as `{a 0, b :c}` to help readability.  
+Note: dictionary keys and values can be any type at all, including vectors, e.g. `{[0 1] 2}`.  
+Note: sets will only preserve distinct elements, i.e. `#{1 1 2}` or `(into #{1 2} #{1})` is equal to `#{1 2}`.
+
 ### Native operations
 
 An operation is opposed to a function which is used defined.
 
-Any integers can be used to get the Nth element of a vector, string, or dictionary.  
-E.g. `(2 [a b c d e f]) => c`  
+An integer N can take one argument which is a vector, string, dictionary, or set, and will return the Nth element of that collection.  
+E.g. `(2 [a 1 b 2 c 3]) => b`  
 E.g. `(map 1 [[a b c] [1 2 3] [e f g]]) => [b 2 f]`
+
+A dictionary can take one argument, and will return the value that corresponds to the argument as a key retrieval, otherwise null.  
+E.g. `({a 1 b 2} b) => 2`  
+E.g. `(map {0 1 1 0} [0 0 1 1 2 1 0]) => [1 1 0 0 null 0 1]`
+
+A set can take one argument, and will return the argument if it is within the set, otherwise `null`.  
+E.g. `(#{1 2 3} 1) => 1`  
+E.g. `(#{a 1 :c} d) => null`
 
 A keyword such as `:keyword` can be used to get the `:keyword` key from a dictionary.  
 E.g. `(:name {:age 23 :name "Patrick" :gender "Male"}) => "Patrick"`
@@ -40,7 +57,8 @@ E.g. `(str (.. {a b c d})) => "[a b][c d]"`
 
 `vec` returns a vector with its arguments as the elements.  
 `dict` returns a dictionary with its arguments as the entries.  
-E.g. `(dict 1 (vec a b c) d e) => {1 [a b c], d e}`
+`set` returns a set with its distinct arguments as the elements.  
+E.g. `(dict (vec a b c) (set d e e)) => {[a b c] #{d e}}`
 
 The following operations return true if its first argument is…  
 `vec?` a vector;  
@@ -53,9 +71,10 @@ E.g. `(map len [[0 1 2] "hello" {a b c d}]) => [3 5 2]`
 `(nth v n)` returns the `n`th vector element, string character, or dictionary entry.  
 E.g. `(map #(nth % 1) [[1 2 3] "hello" {a b c d}]) => [2 e [c d]]`
 
-`(into src dest)` returns dictionary `src` with `dest` merged into it, replacing any existing keys with keys from `d1`.  
-E.g. `(into {k v} {a b c d}) => {a b, c d, k v}`  
-E.g. `(into {k v} {k 0 a b}) => {k v a b}`
+`(into dest src)` returns collection `dest` with `src` merged into it. It intelligently merges between vectors, dictionaries and sets.
+E.g. `(into [a b c d] {k v}) => [a b c d [k v]]`  
+E.g. `(into {k 0 a b} {k v}) => {k v a b}`  
+E.g. `(into #{} [0 1 2 3 3 3]) => #{0 1 2 3}`
 
 `eval` invokes JavaScript's `eval()` function with a string of JavaScript.  
 Use in conjunction with `x->js` to serialise complex Epizeuxis data.  
@@ -71,4 +90,4 @@ The following operations evaluate all their arguments but…
 `do` returns its last argument.
 
 **Other currently undocumented functions:**  
-`if and or let recur ! def str println + - * / mod = != > < >= <= map reduce when`  
+`if and or let recur ! def str println print + - * / mod = != > < >= <= map reduce when`  
