@@ -55,10 +55,17 @@ There are many arthimetic and comparison operations, demonstrated:
 `(& 123 12 9) => 8`, bitwise AND, varadic;  
 `(| 128 64 1) => 193`, bitwise OR, varadic;  
 `(^ 55 170 55) => 170`, bitwise XOR, varadic;  
+`(>> 128 2) => 64`, bitwise right shift, arity 2;  
+`(<< 16 3) => 64`, bitwise left shift, arity 2;  
 `(~ 170) => -171`, bitwise NOT, arity 1;  
 `(** 2 8) => 256`, expotent, arity 2;  
 `(mod 1234 10) => 4`, modulus, arity 2;  
-Undocumented: `<< >> = != > < >= <=`
+`(= [0 a [:b]] [0 a [:b]]) => true`, equality, varadic;  
+`(!= #{0 1 2} [0 1 2] null) => true`, inequality, varadic;  
+`(< 0 1 2 3) => true`, monotonically increasing numbers, varadic;  
+`(> 4 3 2 9) => false`, monotonically decreasing numbers, varadic;  
+`(<= 0 0 1 2) => true`, monotonically non-decreasing numbers, varadic;  
+`(>= 8 8 3 2) => true`, monotonically non-increasing numbers, varadic.
 
 `sect` returns vector or string `v` with…  
 `(sect v)` … the first element dropped;  

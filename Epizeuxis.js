@@ -9,6 +9,22 @@ Set.prototype.nth = function (n) { return [...this][n]; };
 Map.prototype.nth = function (n) { return (key = [...this.keys()][n], [key, this.get(key)]); };
 const hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
 
+function isEquiv (...v) {
+  const t = v.map(x => Object.prototype.toString.call(x));
+  const isColl = type => ['[object Array]', '[object Map]', '[object Set]'].includes(type);
+  if (t[0] != t[1]) return false;
+  if (isColl(t[0])) {
+    const l = v.map(x => x.length);
+    if (l[0] !== l[1]) return false;
+  } else return v[0] === v[1];
+  const compare = (a, b) => isColl(Object.prototype.toString.call(a)) ? isEquiv(a, b) : a === b;
+  if (t[0] == '[object Set]') v.map(x => Array.from(x).sort());
+  for (var i = 0; i < v[0].length; ++i)
+    if (!compare(v[0][i], v[1][i])) return false;
+  return true;
+}
+
+
 const Tkn = {
   LParen: 0, RParen: 1,
   Sym: 2, Str: 3,
@@ -136,10 +152,12 @@ let funcs = {
   "&":       (...all)   => all.reduce((a, b) => a & b),
   "|":       (...all)   => all.reduce((a, b) => a | b),
   "^":       (...all)   => all.reduce((a, b) => a ^ b),
+  ">>":      (a, b)     => a >> b,
+  "<<":      (a, b)     => a << b,
   "~":       n          => ~n,
   "**":      (a, b)     => a ** b,
   "mod":     (a, b)     => a % b,
-  "=":       (...all)   => all.every(v => v == all[0]),
+  "=":       (...all)   => all.every(v => isEquiv(v, all[0])),
   "!=":      (...all)   => !funcs["="](...all),
   ">":       (...all)   => !isNaN(all.reduce((a, b) => a >  b ? b : NaN)),
   "<":       (...all)   => !isNaN(all.reduce((a, b) => a <  b ? b : NaN)),
