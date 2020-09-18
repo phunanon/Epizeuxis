@@ -1,0 +1,19 @@
+
+(fn fib n
+  (if (< n 2) n
+    (+ (fib (dec n))
+       (fib (- n 2)))))
+
+(fn fib n
+  (0
+    (loop n [0 1]
+      #[(+ (.. %))
+        (- (+ (.. %))
+           (1 %))])))
+
+(fn fib n
+  (def a 0)
+  (def b 1)
+  (loop n
+    #(def b (- (def a (+ $a $b)) $b)))
+  $a)

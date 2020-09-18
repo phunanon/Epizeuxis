@@ -8,24 +8,47 @@ Core functions are provided as example on how the native operations work, syntax
 
 ### Syntax
 
-**Literals**  
+**Literals, data types**  
 - All symbols are internally strings, e.g. `hello`
 - `true`, `false`, `null`
 - `"Hello, world!"` is a string literal, with double quotes
 - `123` or `-123` or `1.23` or `-1.23` are number literals
 - `\a` is a character literal, with a backslash
   - `\nl` for newline, `\sp` for space
-- `%` is the first function parameter
-- `%N` is the `N`th parameter
+- `%` is the first function argument
+- `%N` is the `N`th argument
+
+Note: `undefined` is also a literal, which is falsey and only appears within Epizeuxis internally.
 
 **Collections**  
 - `[a 1 :c]` is a vector of elements of any type, equivalent to `(vec a 1 :c)`
 - `{a 0 b :c}` is a dictionary of key-value pairs of any type, equivalent to `(dict a 0 b :c)`
 - `#{a 1 :c}` is a set of unique values, equivalent to `(set a 1 :c)`
+- `args` returns a vector of the arguments of the function 
 
 Note: dictionaries are stringified such as `{a 0, b :c}` to help readability.  
 Note: dictionary keys and values can be any type at all, including vectors, e.g. `{[0 1] 2}`.  
 Note: sets will only preserve distinct elements, i.e. `#{1 1 2}` or `(into #{1 2} #{1})` is equal to `#{1 2}`.
+
+**Expressions**  
+An evaluated expression returns a value. An expression is formed such as `(+ 1 2 3)` whereby the `+` could be a native operation, program function, lambda, variable containing a function or lambda reference, or another expression evaluated as one of the aforementioned; the `1 2 3` in this case are three arguments, of any data type including expressions.  
+E.g. `(+ 1 2 3) => 6`  
+E.g. `(double 5) => 10`  
+E.g. `(#(* % %) 8) => 64`  
+E.g. `($something "blah" [random arguments]) => ...`  
+E.g. `((if true + -) 12 9) => 21`  
+E.g. `(+ (- 10 5) 8) => 12`
+
+**Functions**  
+Function declarations are only accepted at the top-level of a document or REPL interaction - they cannot be contained within expressions.  
+They are declared as `(fn function-name [0..] [1..])` or `(fn function-name [1..])`  
+where `[0..]` is zero or more named parameters (e.g. `a b c`), and `[1..]` is one or more expressions (e.g. `(val "hello")`)  
+E.g. `(fn add a b (+ a b))`  
+E.g. `(fn say2x string (println string " " string))`  
+E.g. `(fn say-hello (println "Hello.") (println "You're handsome"))`
+
+Note: functions can be overloaded with arguments which can be accessed either through a numbered argument i.e. `%5` or through the `args` collection. If a function is underloaded, i.e. called with less arguments than named parameters, the missing named parameters are `undefined`.  
+Note `#[…]` is shorthand for `#(vec …)`.
 
 ### Native operations
 
@@ -49,6 +72,7 @@ E.g. `(:name {:age 23 :name "Patrick" :gender "Male"}) => "Patrick"`
 There are many arthimetic and comparison operations, demonstrated:  
 `(+ 1 2 3) => 3`, addition, varadic;  
 `(- 1 2 3) => -4`, subtraction, varadic;  
+`(- 123) => -123`, sign change, arity 1;  
 `(* 60 60 24) => 86400`, multiplication, varadic;  
 `(/ 10 2 2) => 2.5`, division, varadic;  
 `(quo 19 2 2) => 4`, quotient, varadic;  
@@ -60,6 +84,7 @@ There are many arthimetic and comparison operations, demonstrated:
 `(~ 170) => -171`, bitwise NOT, arity 1;  
 `(** 2 8) => 256`, expotent, arity 2;  
 `(mod 1234 10) => 4`, modulus, arity 2;  
+`(! 123) => false`, negation, arity 1;  
 `(= [0 a [:b]] [0 a [:b]]) => true`, equality, varadic;  
 `(!= #{0 1 2} [0 1 2] null) => true`, inequality, varadic;  
 `(< 0 1 2 3) => true`, monotonically increasing numbers, varadic;  
@@ -71,6 +96,21 @@ There are many arthimetic and comparison operations, demonstrated:
 `(sect v)` … the first element dropped;  
 `(sect d v)` … `d` number of elements dropped;  
 `(sect d t v)` … `t` number of elements after `d` number of elements dropped.
+
+The following operations evaluate all their arguments but…  
+`val` returns its first argument;  
+`do` returns its last argument.
+
+`(map f v…)` calls the `f` function for each item across each collection `v` until one of the collections is exhausted, passing an item from each collection as arguments.  
+E.g. `(map + [0 1 2 3] [0 1 2 3 4 5 6]) => [0 2 4 6]`  
+E.g. `(map - [0 1 2 3]) => [0 -1 -2 -3]`  
+E.g. `(map str "hello" "world") => [hw eo lr ll od]`
+
+`(loop n f)` calls the `f` function `n` times like `(f acc i)` where `acc` is the return value of the previous repetition or null, and `i` is the repetition number starting from 0.  
+`(loop n s f)` does the same except `acc` is first set to `s`.  
+Returns the last retition's return value.  
+E.g. `(loop 4 +) => 6` which is the same as `(+ (+ (+ (+ null 0) 1) 2) 3)`  
+E.g. `(loop 3 5 +) => 8` which is the same as `(+ (+ (+ 5 0) 1) 2)`
 
 `..` 'bursts' vector elements or dictionary entries into its parent's arguments.  
 E.g. `(+ (.. [0 1 2 3])) => 6`  
@@ -106,9 +146,7 @@ E.g. `(eval (x->js [0 1 2]) .length) => 3`
 `x->js` serialises its argument into a JSON string. Does not natively work with dictionaries.  
 E.g. `(x->js [0 b 2]) => [0,"b",2]`
 
-The following operations evaluate all their arguments but…  
-`val` returns its first argument;  
-`do` returns its last argument.
+`print` and `println` prints its arguments concetanated as a string to the HTML transcript of the Epizeuxis REPL, either without or with a newline after it.
 
 **Other currently undocumented functions:**  
-`if and or let recur ! def str println print map reduce when`  
+`if and or let def recur str reduce when`

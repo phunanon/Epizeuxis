@@ -141,11 +141,11 @@ let funcs = {
   "val":     v          => v,
   "do":      (...all)   => all.pop(),
   "!":       v          => !v,
-  "def":     (k, val)   => nu(variables[`$${k}`] = val),
+  "def":     (k, val)   => variables[`$${k}`] = val,
   "print":   (...all)   => nu(printer(all.join(""))),
   "println": (...all)   => funcs.print(...all, "\n"),
   "+":       (...all)   => all.reduce((a, b) => a + b),
-  "-":       (...all)   => all.reduce((a, b) => a - b),
+  "-":       (...all)   => all.length == 1 ? -all[0] : all.reduce((a, b) => a - b),
   "*":       (...all)   => all.reduce((a, b) => a * b),
   "/":       (...all)   => all.reduce((a, b) => a / b),
   "quo":     (...all)   => all.reduce((a, b) => Math.floor(a / b)),
@@ -181,17 +181,23 @@ let funcs = {
   "into":    (src, des) => src instanceof Map ? new Map([...src, ...des])
                             : src instanceof Set ? new Set([...src, ...des]) :
                             [...src, ...des],
-  "sect":    (...all) => {
-    switch (all.length) {
-      case 1: return all[0].slice(1);
-      case 2: return all[1].slice(all[0]);
-      case 3: return all[2].slice(all[0], all[0]+all[1]);
+  "sect":    (a, b, c) => {
+    switch (!!a + !!b + !!c) {
+      case 1: return a.slice(1);
+      case 2: return b.slice(a);
+      case 3: return c.slice(a, a + b);
     }
     return null;
   },
   "map":     (ctx, f, ...vs) =>  [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
                             .map(i => exeOp(f, vs.map(v => v.nth(i)), ctx)),
   "reduce":  (ctx, f, v, s)  => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b], ctx)),
+  "loop":    (ctx, n, s, f) => {
+      if (s && !f) { f = s; s = null; }
+      for (let i = 0; i < n; ++i)
+        s = exeOp(f, [s, i], ctx);
+        return s;
+  },
   "when":    (...all)   => all.pop(),
   "eval":    (...all)   => eval(funcs["str"](...all)),
   "x->js":   x          => JSON.stringify(x)
@@ -218,7 +224,8 @@ function exeFunc (fName, params = [], ctx = new Map()) {
     f = f.slice(paramSyms.length);
     ctx = new Map([...ctx,                                     //Combine old context...
                    ...paramSyms.map((p, i) => [p, params[i]]), //with named parameters
-                   ...params.map((p, i) => [i, p])]);          //and numbered parameters
+                   ...params.map((p, i) => [i, p]),            //and numbered parameters
+                   ["args", params]]);                         //and the args collection
     while (f.length && !doRecur) {
       if (f[0].type == Tkn.LParen) f.shift();
       ret = exeForm(f, ctx);
@@ -240,7 +247,7 @@ function exeOp (op, args, ctx) {
   if (op.startsWith(':'))
     return args[0].get(op);
   if (typeof(funcs[op]) == 'function')
-    return ["map", "reduce"].includes(op)
+    return ["map", "reduce", "loop"].includes(op)
       ? funcs[op](ctx, ...args)
       : funcs[op](...args);
   if (Array.isArray(funcs[op]))
