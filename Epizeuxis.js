@@ -1,4 +1,5 @@
 const mapnstr = v => [...v].map(x => x == null ? "null" : x);
+Object.defineProperty(Array.prototype, "last", {get: function () { return this.length ? this[this.length - 1] : null; }});
 Array.prototype.toString = function () { return `[${mapnstr(this).join(' ')}]`; };
 Set.prototype.toString = function () { return `#{${mapnstr(this).join(' ')}}`; };
 Map.prototype.toString = function () { return `{${[...this.entries()].map(e => mapnstr(e).join(' ')).join(', ')}}`; };
@@ -132,9 +133,9 @@ function parse (source) {
 
 
 
-const nu = () => Tkn.N;
 let printer;
 let variables = {};
+const nu = () => Tkn.N;
 let funcs = {
   "or":      (...all)   => all.find(x => x) || null,
   "and":     (...all)   => all.every(x => x) || null,
@@ -163,6 +164,11 @@ let funcs = {
   "<":       (...all)   => !isNaN(all.reduce((a, b) => a <  b ? b : NaN)),
   ">=":      (...all)   => !isNaN(all.reduce((a, b) => a >= b ? b : NaN)),
   "<=":      (...all)   => !isNaN(all.reduce((a, b) => a <= b ? b : NaN)),
+  "round":   n          => Math.round(n),
+  "floor":   n          => Math.floor(n),
+  "ceil":    n          => Math.ceil(n),
+  "random":  (a, b)     => Math.random() * (b - a || a || 1) + (b ? a : 0),
+  "rrandom": (a, b)     => Math.round(funcs.random(a, b)),
   "str?":    s          => typeof(s) == 'string',
   "vec?":    v          => Array.isArray(v),
   "set?":    s          => s instanceof Set,

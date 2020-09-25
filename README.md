@@ -149,4 +149,4 @@ E.g. `(x->js [0 b 2]) => [0,"b",2]`
 `print` and `println` prints its arguments concetanated as a string to the HTML transcript of the Epizeuxis REPL, either without or with a newline after it.
 
 **Other currently undocumented functions:**  
-`if and or let def recur str reduce when`
+`if and or let def recur str reduce when random rrandom round floor ceil`
