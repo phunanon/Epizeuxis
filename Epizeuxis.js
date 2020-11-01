@@ -133,6 +133,12 @@ function parse (source) {
 
 
 
+class Func {
+  constructor (f) {
+    this.f = f;
+  }
+}
+
 let printer;
 let variables = {};
 const nu = () => Tkn.N;
@@ -197,13 +203,17 @@ let funcs = {
   },
   "map":     (ctx, f, ...vs) =>  [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
                             .map(i => exeOp(f, vs.map(v => v.nth(i)), ctx)),
-  "reduce":  (ctx, f, v, s)  => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b], ctx)),
+  "reduce":  (ctx, f, v, s) => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b], ctx)),
   "loop":    (ctx, n, s, f) => {
-      if (s && !f) { f = s; s = null; }
-      for (let i = 0; i < n; ++i)
-        s = exeOp(f, [s, i], ctx);
-        return s;
+    if (s && !f) { f = s; s = null; }
+    for (let i = 0; i < n; ++i)
+      s = exeOp(f, [s, i], ctx);
+    return s;
   },
+  "filter":  (ctx, f, v) => v.filter(x => exeOp(f, [x], ctx)),
+  "remove":  (ctx, f, v) => v.filter(x => !exeOp(f, [x], ctx)),
+  "juxt":    (...fs)    => new Func((ctx, ...args) => fs.map(f => exeOp(f, args, ctx))),
+  "comp":    (...fs)    => new Func((ctx, ...args) => fs.reduce((acc, f) => [exeOp(f, acc, ctx)], args)[0]),
   "when":    (...all)   => all.pop(),
   "eval":    (...all)   => eval(funcs["str"](...all)),
   "x->js":   x          => JSON.stringify(x)
@@ -250,10 +260,12 @@ function exeOp (op, args, ctx) {
     return op.get(args[0]);
   if (op instanceof Set)
     return op.has(args[0]) ? args[0] : null;
+  if (op instanceof Func)
+    return op.f(ctx, ...args);
   if (op.startsWith(':'))
     return args[0].get(op);
   if (typeof(funcs[op]) == 'function')
-    return ["map", "reduce", "loop"].includes(op)
+    return ["map", "reduce", "loop", "filter", "remove"].includes(op)
       ? funcs[op](ctx, ...args)
       : funcs[op](...args);
   if (Array.isArray(funcs[op]))

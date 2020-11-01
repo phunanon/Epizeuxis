@@ -41,8 +41,8 @@ E.g. `(+ (- 10 5) 8) => 12`
 
 **Functions**  
 Function declarations are only accepted at the top-level of a document or REPL interaction - they cannot be contained within expressions.  
-They are declared as `(fn function-name [0..] [1..])` or `(fn function-name [1..])`  
-where `[0..]` is zero or more named parameters (e.g. `a b c`), and `[1..]` is one or more expressions (e.g. `(val "hello")`)  
+They are declared as `(fn function-name [0…] [1…])` or `(fn function-name [1…])`  
+where `[0…]` is zero or more named parameters (e.g. `a b c`), and `[1…]` is one or more expressions (e.g. `(val "hello")`)  
 E.g. `(fn add a b (+ a b))`  
 E.g. `(fn say2x string (println string " " string))`  
 E.g. `(fn say-hello (println "Hello.") (println "You're handsome"))`
@@ -136,6 +136,23 @@ E.g. `(map #(nth % 1) [[1 2 3] "hello" {a b c d}]) => [2 e [c d]]`
 E.g. `(into [a b c d] {k v}) => [a b c d [k v]]`  
 E.g. `(into {k 0 a b} {k v}) => {k v a b}`  
 E.g. `(into #{} [0 1 2 3 3 3]) => #{0 1 2 3}`
+
+`(filter f v)` returns `v` with only items where `(f item)` is truthy.  
+E.g. `(filter odd? (range 10)) => [1 3 5 7 9]`  
+E.g. `(filter val ["hello" null "hey" false "hi"]) => ["hello" "hey" "hi"]`
+
+`(remove f v)`, complementary to `filter`, returns `v` with only items where `(f item)` is falsey.  
+E.g. `(remove odd? (range 10)) => [0 2 4 6 8]`  
+E.g. `(remove #(< 3 (len %)) ["hello" "hey"]) => ["hey"]`
+
+`juxt` returns a function that acts like this: `#[(arg0 %) (arg1 %) …]` where `argN` are arguments to `juxt`. Means juxtposition.  
+E.g. `((juxt halve double triple) 12) => [6 24 36]`  
+E.g. `((juxt filter remove) odd? (range 10)) => [[1 3 5 7 9] [0 2 4 6 8]]`
+
+`comp` returns a function that calls the functions in its arguments in turn. Means compose.  
+E.g. `((comp inc double) 10) => 22`  
+E.g. `((comp double dec dec) 10) => 18`
+E.g. `(comp inc double)` is shorthand for `#(double (inc (.. args)))`
 
 `eval` invokes JavaScript's `eval()` function with a string of JavaScript.  
 Use in conjunction with `x->js` to serialise complex Epizeuxis data.  
