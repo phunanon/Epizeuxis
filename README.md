@@ -1,6 +1,4 @@
-# Epizeuxis
-
-## Try it [here](https://phunanon.github.io/Epizeuxis).
+# Epizeuxis - try it [here](https://phunanon.github.io/Epizeuxis)
 
 A toy browser-based programming language for teaching/learning. Pronounced /ɛpɪzuksɪs/ (ep-i-ZOOK-sis).  
 Acts as a 'hosted' language, similar to [Clojure](https://en.wikipedia.org/wiki/Clojure), in that interfacing with JavaScript is permitted and encouraged.  
@@ -28,7 +26,8 @@ Note: `undefined` is also a literal, which is falsey and only appears within Epi
 
 Note: dictionaries are stringified such as `{a 0, b :c}` to help readability.  
 Note: dictionary keys and values can be any type at all, including vectors, e.g. `{[0 1] 2}`.  
-Note: sets will only preserve distinct elements, i.e. `#{1 1 2}` or `(into #{1 2} #{1})` is equal to `#{1 2}`.
+Note: sets will only preserve distinct elements, i.e. `#{1 1 2}` or `(into #{1 2} #{1})` is equal to `#{1 2}`.  
+Note: dictionaries with duplicate keys will only preserve the last distinctly keyed entry.
 
 **Expressions**  
 An evaluated expression returns a value. An expression is formed such as `(+ 1 2 3)` whereby the `+` could be a native operation, program function, lambda, variable containing a function or lambda reference, or another expression evaluated as one of the aforementioned; the `1 2 3` in this case are three arguments, of any data type including expressions.  
@@ -58,7 +57,11 @@ An integer N can take one argument which is a vector, string, dictionary, or set
 E.g. `(2 [a 1 b 2 c 3]) => b`  
 E.g. `(map 1 [[a b c] [1 2 3] [e f g]]) => [b 2 f]`
 
-A dictionary can take one argument, and will return the value that corresponds to the argument as a key retrieval, otherwise null.  
+A vector can take one argument, and it will return the argument if it is within the vector, otherwise `null`.  
+E.g. `([a b c] b) => b`  
+E.g. `(map [1 2] [5 4 2 3 1]) => [null null 2 null 1]`
+
+A dictionary can take one argument, and will return the value that corresponds to the argument as a key retrieval, otherwise `null`.  
 E.g. `({a 1 b 2} b) => 2`  
 E.g. `(map {0 1 1 0} [0 0 1 1 2 1 0]) => [1 1 0 0 null 0 1]`
 

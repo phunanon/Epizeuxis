@@ -33,7 +33,7 @@
         el.innerHTML = html;
         return el;
       }
-      const printer = str => e('transcript').append(makeTag('span', str));
+      const printer = str => e('transcript').append(makeTag('span', str +""));
 
       e("transcript").append(makeTag('history', clean(code)));
       [...es("history")].last.ondblclick = () => DOM_replace_entry(code);
@@ -44,6 +44,7 @@
     function DOM_input_resize (that) {
       that.style.height = 0;
       that.style.height = that.scrollHeight +'px'
+      window.scrollTo(0, document.body.scrollHeight);
     }
   </script>
   <style>
@@ -78,7 +79,7 @@
 
 <body onload="DOM_input_resize(e('textarea'))">
   <term>
-    <transcript>Epizeuxis REPL. Enter to submit code, Shift+Enter for newline, double click to repeat code.</transcript>
+    <transcript>Epizeuxis REPL. Enter to execute, Shift+Enter for newline, double click code to repeat.</transcript>
     <textarea onkeypress="return DOM_term_type(event);" oninput="DOM_input_resize(this)" id="entry" autofocus>
 (def pi (eval Math.PI))
 (fn double n (* n 2))

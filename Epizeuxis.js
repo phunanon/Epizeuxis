@@ -1,29 +1,39 @@
+function isEquiv (a, b) {
+  const isColl = o => [eDict, eSet, Array].find(t => o instanceof t);
+  const t = [a, b].map(o => isColl(o) || Object.prototype.toString.call(o));
+  if (t[0] != t[1]) return false;
+  if (isColl(a)) {
+    if (a.length !== b.length) return false;
+  } else return a === b;
+  for (var i = 0; i < a.length; ++i)
+    if (!isEquiv(a.nth(i), b.nth(i)))
+      return false;
+  return true;
+}
+
+class eDict {
+  constructor (entries) {
+    this.items = entries.filter(([k], i) => !entries.slice(i+1).find(([_k]) => isEquiv(k, _k)));
+  }
+  nth (n) { return this.items[n]; }
+  get (k) { return (this.items.find(([_k]) => isEquiv(k, _k)) || [0, null])[1]; }
+  toString () { return `{${this.items.map(e => mapnstr(e).join(' ')).join(', ')}}`; }
+}
+class eSet {
+  constructor (entries) {
+    this.items = entries.filter((e, i) => !entries.slice(i+1).find(x => isEquiv(e, x))).sort();
+  }
+  nth (n) { return this.items[n]; }
+  get (v) { return this.items.find(e => isEquiv(e, v)) || null; }
+  toString () { return `#{${mapnstr(this.items).join(' ')}}`; }
+}
+
 const mapnstr = v => [...v].map(x => x == null ? "null" : x);
 Object.defineProperty(Array.prototype, "last", {get: function () { return this.length ? this[this.length - 1] : null; }});
 Array.prototype.toString = function () { return `[${mapnstr(this).join(' ')}]`; };
-Set.prototype.toString = function () { return `#{${mapnstr(this).join(' ')}}`; };
-Map.prototype.toString = function () { return `{${[...this.entries()].map(e => mapnstr(e).join(' ')).join(', ')}}`; };
-Object.defineProperty(Set.prototype, "length", {get: function () { return this.size; }});
-Object.defineProperty(Map.prototype, "length", {get: function () { return this.size; }});
+[eSet, eDict].forEach(t => Object.defineProperty(t.prototype, "length", {get: function () { return this.items.length; }}));
 String.prototype.nth = Array.prototype.nth = function (n) { return this[n]; };
-Set.prototype.nth = function (n) { return [...this][n]; };
-Map.prototype.nth = function (n) { return (key = [...this.keys()][n], [key, this.get(key)]); };
-const hashCode = s => s.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
-
-function isEquiv (...v) {
-  const t = v.map(x => Object.prototype.toString.call(x));
-  const isColl = type => ['[object Array]', '[object Map]', '[object Set]'].includes(type);
-  if (t[0] != t[1]) return false;
-  if (isColl(t[0])) {
-    const l = v.map(x => x.length);
-    if (l[0] !== l[1]) return false;
-  } else return v[0] === v[1];
-  const compare = (a, b) => isColl(Object.prototype.toString.call(a)) ? isEquiv(a, b) : a === b;
-  if (t[0] == '[object Set]') v.map(x => Array.from(x).sort());
-  for (var i = 0; i < v[0].length; ++i)
-    if (!compare(v[0][i], v[1][i])) return false;
-  return true;
-}
+const hashCode = s => [...s].reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
 
 
 const Tkn = {
@@ -177,21 +187,21 @@ let funcs = {
   "rrandom": (a, b)     => Math.round(funcs.random(a, b)),
   "str?":    s          => typeof(s) == 'string',
   "vec?":    v          => Array.isArray(v),
-  "set?":    s          => s instanceof Set,
-  "dict?":   d          => d instanceof Map,
+  "set?":    s          => s instanceof eSet,
+  "dict?":   d          => d instanceof eDict,
   "str":     (...all)   => all.join(""),
   "vec":     (...all)   => all,
-  "set":     (...all)   => new Set(all),
+  "set":     (...all)   => new eSet(all),
   "dict":    (...all)   => {
-    let dict = new Map();
+    let entries = [];
     for (let i = 0; i < all.length; i += 2)
-      dict.set(all[i], i+1 < all.length ? all[i+1] : null);
-    return dict;
+      entries.push([all[i], all[i+1]]);
+    return new eDict(entries);
   },
   "len":     arr        => arr.length,
   "nth":     (arr, n)   => arr.nth(n),
-  "into":    (src, des) => src instanceof Map ? new Map([...src, ...des])
-                            : src instanceof Set ? new Set([...src, ...des]) :
+  "into":    (src, des) => src instanceof eDict ? new eDict([...src, ...des])
+                            : src instanceof eSet ? new eSet([...src, ...des]) :
                             [...src, ...des],
   "sect":    (a, b, c) => {
     switch (!!a + !!b + !!c) {
@@ -255,11 +265,9 @@ function exeOp (op, args, ctx) {
   if (Number.isInteger(op))
     return args[0].nth(op);
   if (Array.isArray(op))
-    return op.includes(args[0]);
-  if (op instanceof Map)
+    return op.find(e => isEquiv(e, args[0])) || null;
+  if (op instanceof eDict || op instanceof eSet)
     return op.get(args[0]);
-  if (op instanceof Set)
-    return op.has(args[0]) ? args[0] : null;
   if (op instanceof Func)
     return op.f(ctx, ...args);
   if (op.startsWith(':'))
