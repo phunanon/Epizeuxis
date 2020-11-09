@@ -82,7 +82,6 @@
     <transcript>Epizeuxis REPL. Enter to execute, Shift+Enter for newline, double click code to repeat.</transcript>
     <textarea onkeypress="return DOM_term_type(event);" oninput="DOM_input_resize(this)" id="entry" autofocus>
 (def pi (eval Math.PI))
-(fn double n (* n 2))
 (fn pos?   n (< 0 n))
 (fn neg?   n (< n 0))
 (fn odd?   n (= (mod n 2) 1))
@@ -90,10 +89,6 @@
 (fn zero?  n (= n 0))
 (fn inc    n (+ n 1))
 (fn dec    n (- n 1))
-(fn first  v (0 v))
-(fn second v (1 v))
-(fn third  v (2 v))
-(fn last   v ((dec (len v)) v))
 (fn int x radix
   (eval "parseInt(" (x->js x) ", " (or radix 10)\)))
 (fn avg list

@@ -51,10 +51,11 @@ Note `#[…]` is shorthand for `#(vec …)`.
 
 ### Native operations
 
-An operation is opposed to a function which is used defined.
+An operation is opposed to a function which is user-defined.
 
-An integer N can take one argument which is a vector, string, dictionary, or set, and will return the Nth element of that collection.  
-E.g. `(2 [a 1 b 2 c 3]) => b`  
+An integer N can take one argument which is a vector, string, dictionary, or set, and will return the Nth element of that collection. Negative numbers return the Nth element from the end of the collection.  
+E.g. `(2  [a 1 b 2 c 3]) => b`  
+E.g. `(-2 [a 1 b 2 c 3]) => c`
 E.g. `(map 1 [[a b c] [1 2 3] [e f g]]) => [b 2 f]`
 
 A vector can take one argument, and it will return the argument if it is within the vector, otherwise `null`.  
@@ -137,7 +138,7 @@ E.g. `(map #(nth % 1) [[1 2 3] "hello" {a b c d}]) => [2 e [c d]]`
 
 `(into dest src)` returns collection `dest` with `src` merged into it. It intelligently merges between vectors, dictionaries and sets.
 E.g. `(into [a b c d] {k v}) => [a b c d [k v]]`  
-E.g. `(into {k 0 a b} {k v}) => {k v a b}`  
+E.g. `(into {k 0 a b} {k v}) => {a b k v}`  
 E.g. `(into #{} [0 1 2 3 3 3]) => #{0 1 2 3}`
 
 `(filter f v)` returns `v` with only items where `(f item)` is truthy.  

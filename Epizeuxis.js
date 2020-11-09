@@ -17,6 +17,7 @@ class eDict {
   }
   nth (n) { return this.items[n]; }
   get (k) { return (this.items.find(([_k]) => isEquiv(k, _k)) || [0, null])[1]; }
+  *[Symbol.iterator]() { for (let e of this.items) yield e; }
   toString () { return `{${this.items.map(e => mapnstr(e).join(' ')).join(', ')}}`; }
 }
 class eSet {
@@ -25,6 +26,7 @@ class eSet {
   }
   nth (n) { return this.items[n]; }
   get (v) { return this.items.find(e => isEquiv(e, v)) || null; }
+  *[Symbol.iterator]() { for (let e of this.items) yield e; }
   toString () { return `#{${mapnstr(this.items).join(' ')}}`; }
 }
 
@@ -200,9 +202,9 @@ let funcs = {
   },
   "len":     arr        => arr.length,
   "nth":     (arr, n)   => arr.nth(n),
-  "into":    (src, des) => src instanceof eDict ? new eDict([...src, ...des])
-                            : src instanceof eSet ? new eSet([...src, ...des]) :
-                            [...src, ...des],
+  "into":    (des, src) => des instanceof eDict ? new eDict([...des, ...src])
+                            : des instanceof eSet ? new eSet([...des, ...src]) :
+                            [...des, ...src],
   "sect":    (a, b, c) => {
     switch (!!a + !!b + !!c) {
       case 1: return a.slice(1);
@@ -262,8 +264,10 @@ function exeFunc (fName, params = [], ctx = new Map()) {
 }
 
 function exeOp (op, args, ctx) {
-  if (Number.isInteger(op))
-    return args[0].nth(op);
+  if (!isNaN(op)) {
+		op = parseInt(op);
+    return op >= 0 ? args[0].nth(op) : args[0].nth(args[0].length + op);
+	}
   if (Array.isArray(op))
     return op.find(e => isEquiv(e, args[0])) || null;
   if (op instanceof eDict || op instanceof eSet)
