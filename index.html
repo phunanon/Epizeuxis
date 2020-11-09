@@ -81,7 +81,7 @@
   <term>
     <transcript>Epizeuxis REPL. Enter to execute, Shift+Enter for newline, double click code to repeat.</transcript>
     <textarea onkeypress="return DOM_term_type(event);" oninput="DOM_input_resize(this)" id="entry" autofocus>
-(def pi (eval Math.PI))
+"The code below serves both as examples and as a small core library. Either delete it or press Enter!"
 (fn pos?   n (< 0 n))
 (fn neg?   n (< n 0))
 (fn odd?   n (= (mod n 2) 1))
@@ -90,18 +90,12 @@
 (fn inc    n (+ n 1))
 (fn dec    n (- n 1))
 (fn int x radix
-  (eval "parseInt(" (x->js x) ", " (or radix 10)\)))
+  (parseInt: x (or radix 10)))
 (fn avg list
   (/ (+ (.. list))
      (len list)))
 (fn range n
-  (eval "[...Array(" n ").keys()]"))
-(fn split s d
-  (eval (x->js s) ".split(" (x->js d) ")"))
-(fn prompt txt
-  (eval "prompt(" (x->js txt) ")"))
-(fn prompt-int txt
-  (int (prompt txt)))
+  (eval: (str "[...Array(" n ").keys()]")))
 
 (fn fib n
   (if (< n 2) n
@@ -124,6 +118,7 @@
         "</" $tag \>))
     v))
 
+(def pi (eval: Math.PI))
 (vec->xml
   [div
     [h2 "Hello"]

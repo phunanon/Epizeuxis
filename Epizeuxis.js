@@ -1,5 +1,5 @@
+const isColl = o => [eDict, eSet, Array].find(t => o instanceof t);
 function isEquiv (a, b) {
-  const isColl = o => [eDict, eSet, Array].find(t => o instanceof t);
   const t = [a, b].map(o => isColl(o) || Object.prototype.toString.call(o));
   if (t[0] != t[1]) return false;
   if (isColl(a)) {
@@ -31,6 +31,7 @@ class eSet {
 }
 
 const mapnstr = v => [...v].map(x => x == null ? "null" : x);
+const jsColl = x => isColl(x) ? [...x] : x;
 Object.defineProperty(Array.prototype, "last", {get: function () { return this.length ? this[this.length - 1] : null; }});
 Array.prototype.toString = function () { return `[${mapnstr(this).join(' ')}]`; };
 [eSet, eDict].forEach(t => Object.defineProperty(t.prototype, "length", {get: function () { return this.items.length; }}));
@@ -226,9 +227,7 @@ let funcs = {
   "remove":  (ctx, f, v) => v.filter(x => !exeOp(f, [x], ctx)),
   "juxt":    (...fs)    => new Func((ctx, ...args) => fs.map(f => exeOp(f, args, ctx))),
   "comp":    (...fs)    => new Func((ctx, ...args) => fs.reduce((acc, f) => [exeOp(f, acc, ctx)], args)[0]),
-  "when":    (...all)   => all.pop(),
-  "eval":    (...all)   => eval(funcs["str"](...all)),
-  "x->js":   x          => JSON.stringify(x)
+  "when":    (...all)   => all.pop()
 };
 
 const isTrue = v => v && v.type != Tkn.N && v.type != Tkn.F;
@@ -282,6 +281,10 @@ function exeOp (op, args, ctx) {
       : funcs[op](...args);
   if (Array.isArray(funcs[op]))
     return exeFunc(op, args, ctx);
+  if (op.endsWith(':'))
+    return eval(op.slice(0, -1)).call(null, ...args.map(jsColl));
+  if (op.startsWith('.'))
+    return args[0][op.slice(1)].call(...args.map(jsColl));
   console.log(`Operation \`${op}\` not found.`);
   return null;
 }

@@ -73,6 +73,16 @@ E.g. `(#{a 1 :c} d) => null`
 A keyword such as `:keyword` can be used to get the `:keyword` key from a dictionary.  
 E.g. `(:name {:age 23 :name "Patrick" :gender "Male"}) => "Patrick"`
 
+A native JavaScript function can be called by appending a colon (`:`) and using as an operation.  
+E.g. `(Math.abs: -1) => 1`  
+E.g. `(parseInt: "E1" 16) => 225`
+
+A native JavaScript method can be called by prepending a period (`.`) and using it as an operation, with the method object as the first argument, and subsequent arguments passed through to the method.  
+E.g. `(.split "hello, world!" ",") => ["hello" " world!"]`  
+E.g. `(.sort [1 2 8 6 7 5]) => [1 2 5 6 7 8]`
+
+Note: calls with `function:` or `.method` have their collection-type arguments cloned so mutative operations (e.g. `.sort`, `.reverse`) do not modify the original Epizeuxis collection.
+
 There are many arthimetic and comparison operations, demonstrated:  
 `(+ 1 2 3) => 3`, addition, varadic;  
 `(- 1 2 3) => -4`, subtraction, varadic;  
@@ -116,9 +126,10 @@ Returns the last retition's return value.
 E.g. `(loop 4 +) => 6` which is the same as `(+ (+ (+ (+ null 0) 1) 2) 3)`  
 E.g. `(loop 3 5 +) => 8` which is the same as `(+ (+ (+ 5 0) 1) 2)`
 
-`..` 'bursts' vector elements or dictionary entries into its parent's arguments.  
+`..` *bursts* vector or set elements or dictionary entries into its parent's arguments.  
 E.g. `(+ (.. [0 1 2 3])) => 6`  
-E.g. `(str (.. {a b c d})) => "[a b][c d]"`
+E.g. `(str (.. {a b c d})) => "[a b][c d]"`  
+E.g. `[(.. [1 2 3]) (.. [4 5 6])] => [1 2 3 4 5 6]`
 
 `vec` returns a vector with its arguments as the elements.  
 `dict` returns a dictionary with its arguments as the entries.  
