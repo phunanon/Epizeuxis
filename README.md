@@ -1,8 +1,9 @@
 # Epizeuxis - try it [here](https://phunanon.github.io/Epizeuxis)
 
-A toy browser-based programming language for teaching/learning. Pronounced /ɛpɪzuksɪs/ (ep-i-ZOOK-sis).  
-Acts as a 'hosted' language, similar to [Clojure](https://en.wikipedia.org/wiki/Clojure), in that interfacing with JavaScript is permitted and encouraged.  
-Core functions are provided as example on how the native operations work, syntax, and to make the language more usable.
+A JS-hosted programming language for teaching/learning/scripting. Pronounced /ɛpɪzuksɪs/ (ep-i-ZOOK-sis).  
+Similar to [ClojureScript](https://en.wikipedia.org/wiki/Clojure) interfacing with JavaScript is permitted and encouraged.  
+Usable both in the browser and with Node.js (run `node repl.js`).  
+It's not fast, it's not efficient, but is incredibly flexible and hackable!
 
 ### Syntax
 
