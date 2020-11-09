@@ -154,7 +154,6 @@ class Func {
 
 let printer;
 let variables = {};
-const nu = () => Tkn.N;
 let funcs = {
   "or":      (...all)   => all.find(x => x) || null,
   "and":     (...all)   => all.every(x => x) || null,
@@ -162,7 +161,7 @@ let funcs = {
   "do":      (...all)   => all.pop(),
   "!":       v          => !v,
   "def":     (k, val)   => variables[`$${k}`] = val,
-  "print":   (...all)   => nu(printer(all.join(""))),
+  "print":   (...all)   => printer(all.join("")) && null,
   "println": (...all)   => funcs.print(...all, "\n"),
   "+":       (...all)   => all.reduce((a, b) => a + b),
   "-":       (...all)   => all.length == 1 ? -all[0] : all.reduce((a, b) => a - b),
@@ -232,6 +231,11 @@ let funcs = {
 
 const isTrue = v => v && v.type != Tkn.N && v.type != Tkn.F;
 
+function autocompleteStrings () {
+  return [...Object.getOwnPropertyNames(funcs),
+          ...Object.getOwnPropertyNames(variables),
+         "if", "recur", "..", "let"];
+}
 function vm (source, newPrinter) {
   printer = newPrinter;
   funcs = {...funcs, ...parse(source)};
