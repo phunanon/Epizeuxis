@@ -1,6 +1,6 @@
 const readline = require('readline');
-const fs = require('fs')
-const rf = f => fs.readFileSync(f).toString()
+const fs = require('fs');
+const rf = f => fs.readFileSync(f).toString();
 eval(rf('Epizeuxis.js') + rf('core.js'));
 vm(getCoreEpizeuxis());
 

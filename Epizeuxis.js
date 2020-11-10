@@ -401,3 +401,6 @@ function exeArg (f, ctx) {
     case Tkn.N: return null;
   }
 }
+
+if (typeof module !== 'undefined')
+  module.exports = { vm };

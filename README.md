@@ -76,7 +76,8 @@ E.g. `(:name {:age 23 :name "Patrick" :gender "Male"}) => "Patrick"`
 
 A native JavaScript function can be called by appending a colon (`:`) and using as an operation.  
 E.g. `(Math.abs: -1) => 1`  
-E.g. `(parseInt: "E1" 16) => 225`
+E.g. `(parseInt: "E1" 16) => 225`  
+E.g. `(vm: "(+ 1 1)") => 2`
 
 A native JavaScript method can be called by prepending a period (`.`) and using it as an operation, with the method object as the first argument, and subsequent arguments passed through to the method.  
 E.g. `(.split "hello, world!" ",") => ["hello" " world!"]`  
