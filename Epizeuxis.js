@@ -286,7 +286,7 @@ function exeOp (op, args, ctx) {
   if (Array.isArray(funcs[op]))
     return exeFunc(op, args, ctx);
   if (op.endsWith(':'))
-    return eval(op.slice(0, -1)).call(null, ...args.map(jsColl));
+    return eval(`(...a)=>${op.slice(0, -1)}(...a)`).call(null, ...args.map(jsColl));
   if (op.startsWith('.'))
     return args[0][op.slice(1)].call(...args.map(jsColl));
   console.log(`Operation \`${op}\` not found.`);
