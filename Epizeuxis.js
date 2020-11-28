@@ -43,7 +43,6 @@ const Tkn = {
   LParen: 0, RParen: 1,
   Sym: 2, Str: 3,
   Param: 4, Num: 5, Hash: 6,
-  T: 'true', F: 'false', N: 'null'
 };
 
 function tokenise (source) {
@@ -229,8 +228,6 @@ let funcs = {
   "when":    (...all)   => all.pop()
 };
 
-const isTrue = v => v && v.type != Tkn.N && v.type != Tkn.F;
-
 function autocompleteStrings () {
   return [...Object.getOwnPropertyNames(funcs),
           ...Object.getOwnPropertyNames(variables),
@@ -248,7 +245,7 @@ function exeFunc (fName, params = [], ctx = new Map()) {
   do {
     doRecur = doBurst = false;
     let f = funcs[fName].slice();
-    if (!f.length) return Tkn.N;
+    if (!f.length) return null;
     if (f.length == 1)
       return exeArg(f, ctx);
     const paramSyms = f.slice(0, f.findIndex(t => t.type == Tkn.LParen)).map(p => p.str);
@@ -337,13 +334,13 @@ function exeForm (f, ctx) {
       args.push(...args.pop());
     }
 
-    if (op == "when" && args.length == 1 && !isTrue(args[0])) {
+    if (op == "when" && args.length == 1 && !args[0]) {
       skipForm(f);
       if (f.length && f[0].type == Tkn.RParen) f.shift();
       return null;
     } else
     if (op == "if") {
-      if ((args.length == 1) ^ isTrue(args[0]) && f[0].type != Tkn.RParen)
+      if ((args.length == 1) ^ !!args[0] && f[0].type != Tkn.RParen)
         skipArg(f);
       if (f.length && f[0].type == Tkn.RParen) {
         f.shift();
@@ -356,20 +353,20 @@ function exeForm (f, ctx) {
     //  which will instead use native operations
     if (args.length == 1) {
       if (op == "and") {
-        if (!isTrue(args[0]))
+        if (!args[0])
           skipForm(f);
         if (f[0].type == Tkn.RParen) {
           f.shift();
-          return isTrue(args[0]);
+          return !!args[0];
         }
         args.pop();
       } else
       if (op == "or") {
-        if (isTrue(args[0]))
+        if (args[0])
           skipForm(f);
         if (f[0].type == Tkn.RParen) {
           f.shift();
-          return isTrue(args[0]) ? args[0] : false;
+          return args[0] ? args[0] : false;
         }
         args.pop();
       }
@@ -396,11 +393,9 @@ function exeArg (f, ctx) {
         ? (ctx.get(t.str) || variables[t.str])
         : t.str;
     case Tkn.Num: return t.num;
-    case Tkn.T: return true;
-    case Tkn.F: return false;
-    case Tkn.N: return null;
   }
+  return t;
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { vm };
+  module.exports = { vm, exeFunc, autocompleteStrings };
