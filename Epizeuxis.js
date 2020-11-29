@@ -42,7 +42,7 @@ const hashCode = s => [...s].reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return 
 const Tkn = {
   LParen: 0, RParen: 1,
   Sym: 2, Str: 3,
-  Param: 4, Num: 5, Hash: 6,
+  Num: 5, Hash: 6
 };
 
 function tokenise (source) {
@@ -81,11 +81,6 @@ function tokenise (source) {
         tokens.push({type: Tkn.Str, str: longCh || sample[0]});
         i += longCh ? 2 : 1;
         break;
-      case '%':
-        let [pstr] = source.slice(i+1).match(/^[\d]+/) || [];
-        tokens.push({type: Tkn.Param, num: parseInt(pstr || 0)});
-        i += (pstr || []).length;
-        break;
       case '#':
         if (source[i+1] == "{") {
           ++i;
@@ -93,7 +88,7 @@ function tokenise (source) {
         } else tokens.push({type: Tkn.Hash});
         break;
       default:
-        let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.:&|^~]+/);
+        let [sym] = source.slice(i).match(/[\w-+/*?!=<>$.:&|^~%]+/);
         tokens.push({type: Tkn.Sym, str: sym});
         i += sym.length - 1;
     }
@@ -252,7 +247,8 @@ function exeFunc (fName, params = [], ctx = new Map()) {
     f = f.slice(paramSyms.length);
     ctx = new Map([...ctx,                                     //Combine old context...
                    ...paramSyms.map((p, i) => [p, params[i]]), //with named parameters
-                   ...params.map((p, i) => [i, p]),            //and numbered parameters
+                   ...params.map((p, i) => [`%${i}`, p]),      //and numbered parameters
+                   ["%", params[0]],                           //and first parameter
                    ["args", params]]);                         //and the args collection
     while (f.length && !doRecur) {
       if (f[0].type == Tkn.LParen) f.shift();
@@ -316,12 +312,7 @@ function exeForm (f, ctx) {
       f.shift();
       break;
     }
-    //Emit an indexed parameter
-    if (f[0].type == Tkn.Param) {
-      args.push(ctx.get(f[0].num));
-      f.shift();
-    } else
-    //Emit a named parameter
+    //Emit a parameter
     if (ctx.has(f[0].str)) {
       args.push(ctx.get(f[0].str));
       f.shift();
