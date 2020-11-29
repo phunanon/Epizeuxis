@@ -3,7 +3,8 @@
 A JS-hosted programming language for teaching/learning/scripting. Pronounced /ɛpɪzuksɪs/ (ep-i-ZOOK-sis).  
 Similar to [ClojureScript](https://en.wikipedia.org/wiki/Clojure) interfacing with JavaScript is permitted and encouraged.  
 Usable both in the browser and with Node.js (run `node repl.js`).  
-It's not fast, it's not efficient, but is incredibly flexible and hackable!
+**It's not fast**\*, it's not efficient, but is incredibly flexible and hackable!  
+\* in fact, it's slower than its predecessor [Chika](https://github.com/phunanon/Chika/blob/master/docs/platform-comparisons.md) on a 48MHz Arduino...
 
 ### Syntax
 
@@ -75,7 +76,7 @@ A keyword such as `:keyword` can be used to get the `:keyword` key from a dictio
 E.g. `(:name {:age 23 :name "Patrick" :gender "Male"}) => "Patrick"`
 
 A native JavaScript function can be called by appending a colon (`:`) and using as an operation.  
-E.g. `(Math.abs: -1) => 1`  
+E.g. `(Math.tanh: 1) => 0.761…`  
 E.g. `(parseInt: "E1" 16) => 225`  
 E.g. `(vm: "(+ 1 1)") => 2`
 
@@ -183,4 +184,4 @@ E.g. `(x->js [0 b 2]) => [0,"b",2]`
 `print` and `println` prints its arguments concetanated as a string to the HTML transcript of the Epizeuxis REPL, either without or with a newline after it.
 
 **Other currently undocumented functions:**  
-`if and or let def recur str reduce when random rrandom round floor ceil`
+`if and or let def recur str reduce when random rrandom round floor ceil sqrt abs sin cos tan`

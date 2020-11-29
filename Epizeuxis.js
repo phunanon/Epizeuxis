@@ -149,36 +149,26 @@ class Func {
 let printer;
 let variables = {};
 let funcs = {
+  ...Object.fromEntries(["+", "*", "/", "&", "|", "^", ">>", "<<", "**"]
+    .map(o => [o, eval(`(...all) => all.reduce((a, b) => a ${o} b)`)])),
+  ...Object.fromEntries([">", "<", ">=", "<="]
+    .map(o => [o, eval(`(...all) => !isNaN(all.reduce((a, b) => a ${o} b ? b : NaN))`)])),
+  ...Object.fromEntries(["round", "floor", "ceil", "sqrt", "abs", "sin", "cos", "tan"]
+    .map(o => [o, eval(`n => Math.${o}(n)`)])),
   "or":      (...all)   => all.find(x => x) || null,
   "and":     (...all)   => all.every(x => x) || null,
   "val":     v          => v,
-  "do":      (...all)   => all.pop(),
+  "do": (...all) => all.pop(), "when": (...all) => all.pop(),
   "!":       v          => !v,
   "def":     (k, val)   => variables[`$${k}`] = val,
   "print":   (...all)   => printer(all.join("")) && null,
   "println": (...all)   => funcs.print(...all, "\n"),
-  "+":       (...all)   => all.reduce((a, b) => a + b),
   "-":       (...all)   => all.length == 1 ? -all[0] : all.reduce((a, b) => a - b),
-  "*":       (...all)   => all.reduce((a, b) => a * b),
-  "/":       (...all)   => all.reduce((a, b) => a / b),
   "quo":     (...all)   => all.reduce((a, b) => Math.floor(a / b)),
-  "&":       (...all)   => all.reduce((a, b) => a & b),
-  "|":       (...all)   => all.reduce((a, b) => a | b),
-  "^":       (...all)   => all.reduce((a, b) => a ^ b),
-  ">>":      (a, b)     => a >> b,
-  "<<":      (a, b)     => a << b,
-  "~":       n          => ~n,
-  "**":      (a, b)     => a ** b,
   "mod":     (a, b)     => a % b,
+  "~":       n          => ~n,
   "=":       (...all)   => all.every(v => isEquiv(v, all[0])),
   "!=":      (...all)   => !funcs["="](...all),
-  ">":       (...all)   => !isNaN(all.reduce((a, b) => a >  b ? b : NaN)),
-  "<":       (...all)   => !isNaN(all.reduce((a, b) => a <  b ? b : NaN)),
-  ">=":      (...all)   => !isNaN(all.reduce((a, b) => a >= b ? b : NaN)),
-  "<=":      (...all)   => !isNaN(all.reduce((a, b) => a <= b ? b : NaN)),
-  "round":   n          => Math.round(n),
-  "floor":   n          => Math.floor(n),
-  "ceil":    n          => Math.ceil(n),
   "random":  (a, b)     => Math.random() * (b - a || a || 1) + (b ? a : 0),
   "rrandom": (a, b)     => Math.round(funcs.random(a, b)),
   "str?":    s          => typeof(s) == 'string',
@@ -207,7 +197,7 @@ let funcs = {
     }
     return null;
   },
-  "map":     (ctx, f, ...vs) =>  [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
+  "map": (ctx, f, ...vs) => [...Array(Math.min(...vs.map(v => v ? v.length : 0))).keys()]
                             .map(i => exeOp(f, vs.map(v => v.nth(i)), ctx)),
   "reduce":  (ctx, f, v, s) => (s ? [s, ...v] : v).reduce((a, b) => exeOp(f, [a, b], ctx)),
   "loop":    (ctx, n, s, f) => {
@@ -216,18 +206,15 @@ let funcs = {
       s = exeOp(f, [s, i], ctx);
     return s;
   },
-  "filter":  (ctx, f, v) => v.filter(x => exeOp(f, [x], ctx)),
-  "remove":  (ctx, f, v) => v.filter(x => !exeOp(f, [x], ctx)),
+  "filter": (ctx, f, v) => v.filter(x => exeOp(f, [x], ctx)),
+  "remove": (ctx, f, v) => v.filter(x => !exeOp(f, [x], ctx)),
   "juxt":    (...fs)    => new Func((ctx, ...args) => fs.map(f => exeOp(f, args, ctx))),
   "comp":    (...fs)    => new Func((ctx, ...args) => fs.reduce((acc, f) => [exeOp(f, acc, ctx)], args)[0]),
-  "when":    (...all)   => all.pop()
 };
 
-function autocompleteStrings () {
-  return [...Object.getOwnPropertyNames(funcs),
-          ...Object.getOwnPropertyNames(variables),
-         "if", "recur", "..", "let"];
-}
+const autocompleteStrings = () =>
+  [...Object.getOwnPropertyNames(funcs), ...Object.getOwnPropertyNames(variables),
+   "if", "recur", "..", "let"];
 function vm (source, newPrinter) {
   printer = newPrinter;
   funcs = {...funcs, ...parse(source)};
@@ -240,16 +227,14 @@ function exeFunc (fName, params = [], ctx = new Map()) {
   do {
     doRecur = doBurst = false;
     let f = funcs[fName].slice();
-    if (!f.length) return null;
-    if (f.length == 1)
-      return exeArg(f, ctx);
+    if (f.length < 2)
+      return f.length ? exeArg(f, ctx) : null;
     const paramSyms = f.slice(0, f.findIndex(t => t.type == Tkn.LParen)).map(p => p.str);
     f = f.slice(paramSyms.length);
     ctx = new Map([...ctx,                                     //Combine old context...
                    ...paramSyms.map((p, i) => [p, params[i]]), //with named parameters
                    ...params.map((p, i) => [`%${i}`, p]),      //and numbered parameters
-                   ["%", params[0]],                           //and first parameter
-                   ["args", params]]);                         //and the args collection
+                   ["%", params[0]], ["args", params]]);       //and first parameter and the args collection
     while (f.length && !doRecur) {
       if (f[0].type == Tkn.LParen) f.shift();
       ret = exeForm(f, ctx);
@@ -282,7 +267,7 @@ function exeOp (op, args, ctx) {
     return eval(`(...a)=>${op.slice(0, -1)}(...a)`).call(null, ...args.map(jsColl));
   if (op.startsWith('.'))
     return args[0][op.slice(1)].call(...args.map(jsColl));
-  console.log(`Operation \`${op}\` not found.`);
+  printer(`Operation \`${op}\` not found.`);
   return null;
 }
 
