@@ -27,10 +27,9 @@ function getCore () {
 (fn vec->xml v
   (if (vec? v)
     (do
-      (let tag (0 v))
-      (let attr
-        (if (dict? (1 v))
-          (map #(str \\sp (0 %) \\= \\" (1 %) \\") (1 v))))
+      (let tag  (0 v)
+           attr (if (dict? (1 v))
+                    (map #(str \\sp (0 %) \\= \\" (1 %) \\") (1 v))))
       (str
         \\< tag (.. attr) \\>
         (.. (map vec->xml (sect (if attr 2 1) v)))

@@ -290,8 +290,8 @@ function exeForm (f, ctx) {
     return exeArg(f, ctx);
   const op = exeArg(f, ctx);
   if (op == "let" || op == "def") {
-    const sym = f.shift().str;
-    (op == "let" ? ctx : variables).set(sym, exeArg(f, ctx));
+    while (f[0].type != Tkn.RParen)
+      (op == "let" ? ctx : variables).set(f.shift().str, exeArg(f, ctx));
     f.shift(); //Remove the )
     return null;
   }
