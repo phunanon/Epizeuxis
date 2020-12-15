@@ -147,7 +147,8 @@ class Func {
 }
 
 let printer;
-let variables = {};
+let variables = new Map();
+let specialSymbols = ["let", "def", "when", "if", "and", "or", "recur", ".."];
 let funcs = {
   ...Object.fromEntries(["+", "*", "/", "&", "|", "^", ">>", "<<", "**"]
     .map(o => [o, eval(`(...all) => all.reduce((a, b) => a ${o} b)`)])),
@@ -160,8 +161,7 @@ let funcs = {
   "val":     v          => v,
   "do": (...all) => all.pop(), "when": (...all) => all.pop(),
   "!":       v          => !v,
-  "def":     (k, val)   => variables[`$${k}`] = val,
-  "print":   (...all)   => printer(all.join("")) && null,
+  "print":   (...all)   => printer(all.join("")) || null,
   "println": (...all)   => funcs.print(...all, "\n"),
   "-":       (...all)   => all.length == 1 ? -all[0] : all.reduce((a, b) => a - b),
   "quo":     (...all)   => all.reduce((a, b) => Math.floor(a / b)),
@@ -213,8 +213,7 @@ let funcs = {
 };
 
 const autocompleteStrings = () =>
-  [...Object.getOwnPropertyNames(funcs), ...Object.getOwnPropertyNames(variables),
-   "if", "recur", "..", "let"];
+  [...Object.getOwnPropertyNames(funcs), ...variables.keys(), ...specialSymbols];
 function vm (source, newPrinter) {
   printer = newPrinter;
   funcs = {...funcs, ...parse(source)};
@@ -290,6 +289,12 @@ function exeForm (f, ctx) {
   if (f.length == 1)
     return exeArg(f, ctx);
   const op = exeArg(f, ctx);
+  if (op == "let" || op == "def") {
+    const sym = f.shift().str;
+    (op == "let" ? ctx : variables).set(sym, exeArg(f, ctx));
+    f.shift(); //Remove the )
+    return null;
+  }
   const args = [];
   while (f.length) {
     //Break on )
@@ -353,10 +358,6 @@ function exeForm (f, ctx) {
     return (doRecur = args);
   if (op == "..")
     return (doBurst = (args[0] ? args[0] : null));
-  if (op == "let") {
-    ctx.set(`$${args[0]}`, args[1]);
-    return null;
-  }
   return exeOp(op, args, ctx);
 }
 
@@ -364,10 +365,14 @@ function exeArg (f, ctx) {
   const t = f.shift();
   switch (t.type) {
     case Tkn.LParen: return exeForm(f, ctx);
-    case Tkn.Sym: case Tkn.Str:
-      return t.str.startsWith("$")
-        ? (ctx.get(t.str) || variables[t.str])
-        : t.str;
+    case Tkn.Sym:
+      if (ctx.has(t.str)) return ctx.get(t.str);
+      if (variables.has(t.str)) return variables.get(t.str);
+      if (funcs.hasOwnProperty(t.str) || t.str.endsWith(":") || specialSymbols.includes(t.str))
+        return t.str;
+      return null;
+    case Tkn.Str:
+      return t.str;
     case Tkn.Num: return t.num;
   }
   return t;

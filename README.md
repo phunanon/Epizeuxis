@@ -36,7 +36,7 @@ An evaluated expression returns a value. An expression is formed such as `(+ 1 2
 E.g. `(+ 1 2 3) => 6`  
 E.g. `(double 5) => 10`  
 E.g. `(#(* % %) 8) => 64`  
-E.g. `($something "blah" [random arguments]) => ...`  
+E.g. `(variable "blah" [random arguments]) => ...`  
 E.g. `((if true + -) 12 9) => 21`  
 E.g. `(+ (- 10 5) 8) => 12`
 

@@ -32,17 +32,17 @@ function getCore () {
         (if (dict? (1 v))
           (map #(str \\sp (0 %) \\= \\" (1 %) \\") (1 v))))
       (str
-        \\< $tag (.. $attr) \\>
-        (.. (map vec->xml (sect (if $attr 2 1) v)))
-        "</" $tag \\>))
+        \\< tag (.. attr) \\>
+        (.. (map vec->xml (sect (if attr 2 1) v)))
+        "</" tag \\>))
     v))
 
-(def pi (eval: Math.PI))
+(def pi (eval: "Math.PI"))
 (vec->xml
-  [div
-    [h2 "Hello"]
-    [p "JavaScript's Math.PI is " \\nl [b $pi] "."]
-    [p "Find more info about Epizeuxis on "
-       [a {href "https://github.com/phunanon/Epizeuxis"}
+  ["div"
+    ["h2" "Hello"]
+    ["p" "JavaScript's Math.PI is " \\nl ["b" pi] "."]
+    ["p" "Find more info about Epizeuxis on "
+       ["a" {"href" "https://github.com/phunanon/Epizeuxis"}
           "Github"]]])`;
 }
