@@ -368,7 +368,7 @@ function exeArg (f, ctx) {
     case Tkn.Sym:
       if (ctx.has(t.str)) return ctx.get(t.str);
       if (variables.has(t.str)) return variables.get(t.str);
-      if (funcs.hasOwnProperty(t.str) || t.str.endsWith(":") || specialSymbols.includes(t.str))
+      if (funcs.hasOwnProperty(t.str) || t.str.endsWith(":") || t.str.startsWith(".") || specialSymbols.includes(t.str))
         return t.str;
       return null;
     case Tkn.Str:
