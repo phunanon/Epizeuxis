@@ -15,6 +15,8 @@ function getCore () {
      (len list)))
 (fn range n
   (eval: (str "[...Array(" n ").keys()]")))
+(fn str* s n
+  (str (.. (map #(val s) (range n)))))
 
 (fn fib n
   (if (< n 2) n
